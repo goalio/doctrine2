@@ -354,7 +354,7 @@ class EntityManager implements ObjectManager
 
         $this->unitOfWork->commit($entity);
     }
-    
+
     /**
      * Finds an Entity by its identifier.
      *
@@ -863,7 +863,7 @@ class EntityManager implements ObjectManager
                 throw new \InvalidArgumentException("Invalid argument: " . $conn);
         }
 
-        return new EntityManager($conn, $config, $conn->getEventManager());
+        return new static($conn, $config, $conn->getEventManager());
     }
 
     /**

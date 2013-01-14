@@ -2415,6 +2415,12 @@ class UnitOfWork implements PropertyChangedListener
                 if ($entity instanceof NotifyPropertyChanged) {
                     $entity->addPropertyChangedListener($this);
                 }
+
+                // inject ObjectManager into just loaded proxies.
+                if ($overrideLocalValues && $entity instanceof ObjectManagerAware) {
+                    $entity->injectObjectManager($this->em, $class);
+                }
+
             } else {
                 $overrideLocalValues = isset($hints[Query::HINT_REFRESH]);
 
