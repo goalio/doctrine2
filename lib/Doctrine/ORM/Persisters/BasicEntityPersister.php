@@ -659,13 +659,13 @@ class BasicEntityPersister
      * @param array $hints Hints for entity creation.
      * @param int $lockMode
      * @param int $limit Limit number of results
-     * @param array $orderBy Criteria to order by 
+     * @param array $orderBy Criteria to order by
      * @return object The loaded and managed entity instance or NULL if the entity can not be found.
      * @todo Check identity map? loadById method? Try to guess whether $criteria is the id?
      */
     public function load(array $criteria, $entity = null, $assoc = null, array $hints = array(), $lockMode = 0, $limit = null, array $orderBy = null)
     {
-        $sql = $this->_getSelectEntitiesSQL($criteria, $assoc, $lockMode, $limit, null, $orderBy);        
+        $sql = $this->_getSelectEntitiesSQL($criteria, $assoc, $lockMode, $limit, null, $orderBy);
         list($params, $types) = $this->expandParameters($criteria);
         $stmt = $this->_conn->executeQuery($sql, $params, $types);
 
@@ -1704,7 +1704,7 @@ class BasicEntityPersister
 
             if (null !== $key){
                 $value = $idValues[$key];
-           } 
+           }
         }
 
         return $value;
@@ -1784,8 +1784,11 @@ class BasicEntityPersister
     {
         $filterClauses = array();
 
+        // goalio: added to insert not only root entity into filter, but also current class
+        $overrideEntity = $this->_em->getClassMetadata($this->_class);
+
         foreach ($this->_em->getFilters()->getEnabledFilters() as $filter) {
-            if ('' !== $filterExpr = $filter->addFilterConstraint($targetEntity, $targetTableAlias)) {
+            if ('' !== $filterExpr = $filter->addFilterConstraint($targetEntity, $targetTableAlias, $overrideEntity)) {
                 $filterClauses[] = '(' . $filterExpr . ')';
             }
         }
