@@ -1785,7 +1785,7 @@ class BasicEntityPersister
         $filterClauses = array();
 
         // goalio: added to insert not only root entity into filter, but also current class
-        $overrideEntity = $this->_em->getClassMetadata($this->_class);
+        $overrideEntity = $this->_class;
 
         foreach ($this->_em->getFilters()->getEnabledFilters() as $filter) {
             if ('' !== $filterExpr = $filter->addFilterConstraint($targetEntity, $targetTableAlias, $overrideEntity)) {
