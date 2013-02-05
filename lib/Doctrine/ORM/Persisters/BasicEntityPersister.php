@@ -96,6 +96,7 @@ class BasicEntityPersister
         Comparison::LTE => '<= %s',
         Comparison::IN  => 'IN (%s)',
         Comparison::NIN => 'NOT IN (%s)',
+        Comparison::LIKE => 'LIKE %s',
     );
 
     /**
@@ -1788,7 +1789,7 @@ class BasicEntityPersister
         $overrideEntity = $this->_class;
 
         foreach ($this->_em->getFilters()->getEnabledFilters() as $filter) {
-            if ('' !== $filterExpr = $filter->addFilterConstraint($targetEntity, $targetTableAlias, $overrideEntity)) {
+            if ('' !== $filterExpr = $filter->addFilterConstraint($targetEntity, $targetTableAlias, null, $overrideEntity)) {
                 $filterClauses[] = '(' . $filterExpr . ')';
             }
         }
