@@ -71,7 +71,19 @@ class ProxyFactory
         $this->_autoGenerate = $autoGenerate;
         $this->_proxyNamespace = $proxyNs;
     }
-
+	
+    /**
+     * Delete a proxy instance for the entity of the given type 
+     *
+     * @param string $className
+     */
+    public function deleteProxy($className) {
+        $fileName = $this->getProxyFileName($className);
+        if(file_exists($fileName)) {
+            unlink($fileName);
+        }
+    }
+	
     /**
      * Gets a reference proxy instance for the entity of the given type and identified by
      * the given identifier.
