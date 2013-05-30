@@ -38,7 +38,7 @@ abstract class SQLFilter
      * The entity manager.
      * @var EntityManager
      */
-    private $em;
+    protected $em;
 
     /**
      * Parameters for the filter.
