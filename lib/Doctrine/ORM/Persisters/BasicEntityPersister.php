@@ -97,6 +97,7 @@ class BasicEntityPersister
         Comparison::IN  => 'IN (%s)',
         Comparison::NIN => 'NOT IN (%s)',
         Comparison::LIKE => 'LIKE %s',
+        Comparison::CONTAINS => 'LIKE %s',
     );
 
     /**
