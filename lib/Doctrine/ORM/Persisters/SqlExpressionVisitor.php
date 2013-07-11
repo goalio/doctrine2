@@ -35,7 +35,7 @@ class SqlExpressionVisitor extends ExpressionVisitor
     /**
      * @var \Doctrine\ORM\Persisters\BasicEntityPersister
      */
-    private $persister;
+    protected $persister;
 
     /**
      * @param \Doctrine\ORM\Persisters\BasicEntityPersister $persister
