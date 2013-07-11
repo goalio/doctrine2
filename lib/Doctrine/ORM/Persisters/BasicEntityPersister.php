@@ -40,6 +40,9 @@ use Doctrine\Common\Util\ClassUtils;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\Common\Collections\Expr\Comparison;
 
+use GoalioDoctrine\Persisters\SmartSqlExpressionVisitor as SqlExpressionVisitor;
+use GoalioDoctrine\Persisters\SmartSqlValueVisitor as SqlValueVisitor;
+
 /**
  * A BasicEntityPersiter maps an entity to a single table in a relational database.
  *
