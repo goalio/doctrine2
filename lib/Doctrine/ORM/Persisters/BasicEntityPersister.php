@@ -234,6 +234,10 @@ class BasicEntityPersister
     {
         return $this->_class;
     }
+	
+	public function getEntityManager() {
+		return $this->_em;
+	}
 
     /**
      * Adds an entity to the queued insertions.
@@ -1369,7 +1373,7 @@ class BasicEntityPersister
      * @return string The SQL table alias.
      * @todo Reconsider. Binding table aliases to class names is not such a good idea.
      */
-    protected function _getSQLTableAlias($className, $assocName = '')
+    public function _getSQLTableAlias($className, $assocName = '')
     {
         if ($assocName) {
             $className .= '#' . $assocName;
