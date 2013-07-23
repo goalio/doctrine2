@@ -113,6 +113,13 @@ class OneToManyPersister extends AbstractCollectionPersister
 
         foreach ($targetClass->associationMappings[$mapping['mappedBy']]['joinColumns'] as $joinColumn) {
             $whereClauses[] = $joinColumn['name'] . ' = ?';
+            
+            // Generic Reference
+            if($targetClass->associationMappings[$mapping['mappedBy']]['targetEntity'] == 'GoalioDoctrine\Model\Entities\IdEntity'
+            && $sourceClass->fieldNames[$joinColumn['referencedColumnName']] == 'clazz') {
+                $params[] = $coll->getTypeClass()->getId();
+                continue;
+            }
 
             $params[] = ($targetClass->containsForeignIdentifier)
                 ? $id[$sourceClass->getFieldForColumn($joinColumn['referencedColumnName'])]
