@@ -36,6 +36,9 @@ use Doctrine\Common\Util\ClassUtils;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\Common\Collections\Expr\Comparison;
 
+use GoalioDoctrine\Persisters\SmartSqlExpressionVisitor as SqlExpressionVisitor; 
+use GoalioDoctrine\Persisters\SmartSqlValueVisitor as SqlValueVisitor; 
+
 /**
  * A BasicEntityPersister maps an entity to a single table in a relational database.
  *
@@ -229,6 +232,15 @@ class BasicEntityPersister
     {
         return $this->class;
     }
+	
+	/**
+	 * @return \Doctrine\ORM\EntityManager
+	 */
+    public function getEntityManager() 
+	{
+	    return $this->_em;
+	}
+	 
 
     /**
      * Adds an entity to the queued insertions.
@@ -1509,7 +1521,7 @@ class BasicEntityPersister
      *
      * @todo Reconsider. Binding table aliases to class names is not such a good idea.
      */
-    protected function getSQLTableAlias($className, $assocName = '')
+    public function getSQLTableAlias($className, $assocName = '')
     {
         if ($assocName) {
             $className .= '#' . $assocName;
