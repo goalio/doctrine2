@@ -47,7 +47,7 @@ class ClassMetadataFactory extends AbstractClassMetadataFactory
     /**
      * @var EntityManager
      */
-    private $em;
+    protected $em;
 
     /**
      * @var \Doctrine\DBAL\Platforms\AbstractPlatform
