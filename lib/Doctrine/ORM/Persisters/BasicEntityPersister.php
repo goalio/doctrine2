@@ -238,7 +238,7 @@ class BasicEntityPersister
 	 */
     public function getEntityManager() 
 	{
-	    return $this->_em;
+	    return $this->em;
 	}
 	 
 
@@ -1978,7 +1978,7 @@ class BasicEntityPersister
         $filterClauses = array();
 
         foreach ($this->em->getFilters()->getEnabledFilters() as $filter) {
-            if ('' !== $filterExpr = $filter->addFilterConstraint($targetEntity, $targetTableAlias, $this->_class)) {
+            if ('' !== $filterExpr = $filter->addFilterConstraint($targetEntity, $targetTableAlias, $this->class)) {
                 $filterClauses[] = '(' . $filterExpr . ')';
             }
         }
