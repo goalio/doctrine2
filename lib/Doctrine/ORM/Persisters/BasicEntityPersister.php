@@ -1966,7 +1966,7 @@ class BasicEntityPersister
         $filterClauses = array();
 
         foreach ($this->em->getFilters()->getEnabledFilters() as $filter) {
-            if ('' !== $filterExpr = $filter->addFilterConstraint($targetEntity, $targetTableAlias)) {
+            if ('' !== $filterExpr = $filter->addFilterConstraint($targetEntity, $targetTableAlias, $this->_class)) {
                 $filterClauses[] = '(' . $filterExpr . ')';
             }
         }
