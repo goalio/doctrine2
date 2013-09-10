@@ -39,7 +39,7 @@ abstract class SQLFilter
      *
      * @var EntityManager
      */
-    private $em;
+    protected $em;
 
     /**
      * Parameters for the filter.
