@@ -178,7 +178,7 @@ class BasicEntityPersister
      *
      * @var string
      */
-    protected $selectColumnListSql;
+    public $selectColumnListSql;
 
     /**
      * The JOIN SQL fragment used to eagerly load all many-to-one and one-to-one
@@ -193,7 +193,7 @@ class BasicEntityPersister
      *
      * @var integer
      */
-    protected $sqlAliasCounter = 0;
+    public $sqlAliasCounter = 0;
 
     /**
      * Map from class names (FQCN) to the corresponding generated SQL table aliases.
@@ -1779,6 +1779,11 @@ class BasicEntityPersister
 
                 $criteria[$tableAlias . "." . $targetKeyColumn] = $value;
 
+                continue;
+            }
+
+            if($owningAssoc['targetEntity'] == 'GoalioDoctrine\Model\Entities\IdEntity' && $sourceKeyColumn == '__clazz_id__') {
+                $criteria[$tableAlias . "." . $targetKeyColumn] = $sourceClass->id;
                 continue;
             }
 

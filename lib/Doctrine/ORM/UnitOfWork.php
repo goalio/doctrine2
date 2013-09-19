@@ -2606,6 +2606,8 @@ class UnitOfWork implements PropertyChangedListener
                         if ($joinColumnValue !== null) {
                             if ($targetClass->containsForeignIdentifier) {
                                 $associatedId[$targetClass->getFieldForColumn($targetColumn)] = $joinColumnValue;
+                            } else if($targetColumn == '__clazz_id__') {
+                                continue;
                             } else {
                                 $associatedId[$targetClass->fieldNames[$targetColumn]] = $joinColumnValue;
                             }

@@ -114,7 +114,7 @@ class SingleTablePersister extends AbstractEntityInheritancePersister
     /**
      * {@inheritdoc}
      */
-    protected function getSQLTableAlias($className, $assocName = '')
+    public function getSQLTableAlias($className, $assocName = '')
     {
         return parent::getSQLTableAlias($this->class->rootEntityName, $assocName);
     }
