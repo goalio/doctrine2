@@ -34,12 +34,12 @@ class SqlValueVisitor extends ExpressionVisitor
     /**
      * @var array
      */
-    private $values = array();
+    protected $values = array();
 
     /**
      * @var array
      */
-    private $types  = array();
+    protected $types  = array();
 
     /**
      * Converts a comparison expression into the target query language output.
