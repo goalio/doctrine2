@@ -67,6 +67,16 @@ final class Events
     const prePersist = 'prePersist';
 
     /**
+     * The preInsert event occurs before the database insert operations to
+     * entity data.
+     *
+     * This is an entity lifecycle event.
+     *
+     * @var string
+     */
+    const preInsert = 'preInsert';
+
+    /**
      * The postPersist event occurs for an entity after the entity has
      * been made persistent. It will be invoked after the database insert operations.
      * Generated primary key values are available in the postPersist event.

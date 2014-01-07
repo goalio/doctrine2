@@ -174,7 +174,7 @@ class ProxyFactory extends AbstractProxyFactory
                 $proxy->__setCloner($cloner);
                 $proxy->__setInitialized(false);
 
-                throw new EntityNotFoundException();
+                //throw new EntityNotFoundException();
             }
         };
     }

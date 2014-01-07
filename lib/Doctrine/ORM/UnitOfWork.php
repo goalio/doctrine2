@@ -231,7 +231,7 @@ class UnitOfWork implements PropertyChangedListener
      *
      * @var \Doctrine\ORM\Event\ListenersInvoker
      */
-    private $listenersInvoker;
+    public $listenersInvoker;
 
     /**
      * Orphaned entities that are scheduled for removal.
@@ -253,7 +253,7 @@ class UnitOfWork implements PropertyChangedListener
      * @var array
      */
     private $eagerLoadingEntities = array();
-	
+
 	/**
      * Additional information to create referenced entities with subclasses
      *
@@ -387,7 +387,7 @@ class UnitOfWork implements PropertyChangedListener
 
         // Clear up
 		$this->eagerLoadingEntities =
-        $this->eagerLoadingInheritedEntities = 
+        $this->eagerLoadingInheritedEntities =
         $this->entityInsertions =
         $this->entityUpdates =
         $this->entityDeletions =
@@ -942,11 +942,16 @@ class UnitOfWork implements PropertyChangedListener
         $entities   = array();
         $className  = $class->name;
         $persister  = $this->getEntityPersister($className);
+        $preInsertInvoke    = $this->listenersInvoker->getSubscribedSystems($class, Events::preInsert);
         $invoke     = $this->listenersInvoker->getSubscribedSystems($class, Events::postPersist);
 
         foreach ($this->entityInsertions as $oid => $entity) {
             if ($this->em->getClassMetadata(get_class($entity))->name !== $className) {
                 continue;
+            }
+
+            if ($preInsertInvoke != ListenersInvoker::INVOKE_NONE) {
+                $this->listenersInvoker->invoke($class, Events::preInsert, $entity, new LifecycleEventArgs($entity, $this->em), $preInsertInvoke);
             }
 
             $persister->addInsert($entity);
@@ -2752,16 +2757,16 @@ class UnitOfWork implements PropertyChangedListener
     public function triggerEagerLoads()
     {
         if ( ! $this->eagerLoadingEntities) {
-			$this->eagerLoadingInheritedEntities = array(); 
+			$this->eagerLoadingInheritedEntities = array();
             return;
         }
 
         // avoid infinite recursion
         $eagerLoadingEntities       = $this->eagerLoadingEntities;
         $this->eagerLoadingEntities = array();
-		
+
 		$eagerLoadingInheritedEntities       = $this->eagerLoadingInheritedEntities;
-        $this->eagerLoadingInheritedEntities = array(); 
+        $this->eagerLoadingInheritedEntities = array();
 
         foreach ($eagerLoadingEntities as $entityName => $ids) {
             if ( ! $ids) {
@@ -2773,7 +2778,7 @@ class UnitOfWork implements PropertyChangedListener
             $this->getEntityPersister($entityName)->loadAll(
                 array_combine($class->identifier, array(array_values($ids)))
             );
-			
+
 			// Allow deferred loading of related entities with subclasses
             foreach($ids as $relatedIdHash => $associatedId) {
                 if(isset($eagerLoadingInheritedEntities[$entityName][$relatedIdHash][$associatedId])) {
@@ -2783,12 +2788,13 @@ class UnitOfWork implements PropertyChangedListener
                     unset($eagerLoadingInheritedEntities[$entityName][$relatedIdHash][$associatedId]);
 
                     // Get referenced entity which should be loaded now and set it in source
-                    $newValue = $this->getByIdHash($relatedIdHash, $entityName);
-                    $class->reflFields[$field]->setValue($entity, $newValue);
+                    if($newValue = $this->tryGetByIdHash($relatedIdHash, $entityName)) {
+                        $class->reflFields[$field]->setValue($entity, $newValue);
 
-                    // Override original data
-                    $oid = spl_object_hash($entity);
-                    $this->originalEntityData[$oid][$field] = $newValue;
+                        // Override original data
+                        $oid = spl_object_hash($entity);
+                        $this->originalEntityData[$oid][$field] = $newValue;
+                    }
                 }
             }
         }
@@ -2918,7 +2924,7 @@ class UnitOfWork implements PropertyChangedListener
 
         return isset($values[$class->identifier[0]]) ? $values[$class->identifier[0]] : null;
     }
- 
+
     /**
      * Tries to find an entity with the given identifier in the identity map of
      * this UnitOfWork.
