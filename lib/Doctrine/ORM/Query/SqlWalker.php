@@ -908,11 +908,16 @@ class SqlWalker implements TreeWalker
 
                         continue;
                     }
-                    
-                    if($assoc['targetEntity'] == 'GoalioDoctrine\Model\Entities\IdEntity' && $quotedTargetColumn == '__clazz_id__') {
-                        $conditions[] = $targetClass->getId() .  ' = ' . $targetTableAlias . '.' . $quotedSourceColumn;
-                        continue;
-                    }                    
+
+                     if($assoc['targetEntity'] == 'GoalioDoctrine\Model\Entities\IdEntity' && $quotedTargetColumn == '__clazz_id__') {
+                         $classes = array($sourceClass->getId());
+                         foreach($sourceClass->subClasses as $subClass) {
+                             $classes[] = $this->em->getClassMetadata($subClass)->getId();
+                         }
+                         $conditions[] = $targetTableAlias . '.' . $quotedSourceColumn . ' IN ('.implode(',', $classes).')';
+                         //$conditions[] = $targetClass->getId() .  ' = ' . $targetTableAlias . '.' . $quotedSourceColumn;
+                         continue;
+                     }
 
                     $conditions[] = $sourceTableAlias . '.' . $quotedTargetColumn . ' = ' . $targetTableAlias . '.' . $quotedSourceColumn;
                 }
