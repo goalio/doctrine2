@@ -2667,7 +2667,8 @@ class UnitOfWork implements PropertyChangedListener
                                 && isset($hints[self::HINT_DEFEREAGERLOAD]) && !$targetClass->isIdentifierComposite) {
                                 $this->eagerLoadingEntities[$targetClass->rootEntityName][$relatedIdHash] = current($associatedId);
                                 $this->eagerLoadingInheritedEntities[$targetClass->rootEntityName][$relatedIdHash][current($associatedId)] = array($entity, $class, $field);
-                                $newValue = null;
+                                // Will be replaced immediately, but necessary for reflection
+                                $newValue = $this->em->getProxyFactory()->getProxy($assoc['targetEntity'], $associatedId);
                             }
                             else {
                                 $newValue = $this->getEntityPersister($assoc['targetEntity'])->loadOneToOneEntity($assoc, $entity, $associatedId);
