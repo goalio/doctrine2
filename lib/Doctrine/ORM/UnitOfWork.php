@@ -2558,15 +2558,16 @@ class UnitOfWork implements PropertyChangedListener
                             // an entity with subclasses at a *-to-one location is really bad! (performance-wise)
                             //$newValue = $this->getEntityPersister($assoc['targetEntity'])->loadOneToOneEntity($assoc, $entity, $associatedId);
     						// Maybe not anymore...
-                            if ($hints['fetchMode'][$class->name][$field] == ClassMetadata::FETCH_EAGER 
+                            if ($hints['fetchMode'][$class->name][$field] == ClassMetadata::FETCH_EAGER
 							&& isset($hints['deferEagerLoad']) && !$targetClass->isIdentifierComposite) {
                                 $this->eagerLoadingEntities[$targetClass->rootEntityName][$relatedIdHash] = current($associatedId);
                                 $this->eagerLoadingInheritedEntities[$targetClass->rootEntityName][$relatedIdHash][current($associatedId)] = array($entity, $class, $field);
-                           	    $newValue = null;							
-							}
+                                // Will be replaced immediately, but necessary for reflection
+                                $newValue = $this->em->getProxyFactory()->getProxy($assoc['targetEntity'], $associatedId);
+                            }
                             else {
                                 $newValue = $this->getEntityPersister($assoc['targetEntity'])->loadOneToOneEntity($assoc, $entity, $associatedId);
-                            } 
+                            }
                             break;
 
                         default:
@@ -2669,7 +2670,7 @@ class UnitOfWork implements PropertyChangedListener
             $this->getEntityPersister($entityName)->loadAll(
                 array_combine($class->identifier, array(array_values($ids)))
             );
-            
+
             // Allow deferred loading of related entities with subclasses
             foreach($ids as $relatedIdHash => $associatedId) {
                 if(isset($this->eagerLoadingInheritedEntities[$entityName][$relatedIdHash][$associatedId])) {
@@ -2686,7 +2687,7 @@ class UnitOfWork implements PropertyChangedListener
                     $oid = spl_object_hash($entity);
                     $this->originalEntityData[$oid][$field] = $newValue;
                 }
-            } 
+            }
         }
     }
 
