@@ -365,6 +365,8 @@ class UnitOfWork implements PropertyChangedListener
         }
 
         // Clear up
+        $this->eagerLoadingEntities =
+        $this->eagerLoadingInheritedEntities =
         $this->entityInsertions =
         $this->entityUpdates =
         $this->entityDeletions =
@@ -2653,12 +2655,18 @@ class UnitOfWork implements PropertyChangedListener
     public function triggerEagerLoads()
     {
         if ( ! $this->eagerLoadingEntities) {
+            $this->eagerLoadingInheritedEntities = array();
             return;
         }
 
         // avoid infinite recursion
         $eagerLoadingEntities       = $this->eagerLoadingEntities;
         $this->eagerLoadingEntities = array();
+
+
+        // clean up memory
+        $eagerLoadingInheritedEntities       = $this->eagerLoadingInheritedEntities;
+        $this->eagerLoadingInheritedEntities = array();
 
         foreach ($eagerLoadingEntities as $entityName => $ids) {
             if ( ! $ids) {
@@ -2673,11 +2681,11 @@ class UnitOfWork implements PropertyChangedListener
 
             // Allow deferred loading of related entities with subclasses
             foreach($ids as $relatedIdHash => $associatedId) {
-                if(isset($this->eagerLoadingInheritedEntities[$entityName][$relatedIdHash][$associatedId])) {
+                if(isset($eagerLoadingInheritedEntities[$entityName][$relatedIdHash][$associatedId])) {
 
                     // get additional information about the source entity
-                    list($entity, $class, $field) = $this->eagerLoadingInheritedEntities[$entityName][$relatedIdHash][$associatedId];
-                    unset($this->eagerLoadingInheritedEntities[$entityName][$relatedIdHash][$associatedId]);
+                    list($entity, $class, $field) = $eagerLoadingInheritedEntities[$entityName][$relatedIdHash][$associatedId];
+                    unset($eagerLoadingInheritedEntities[$entityName][$relatedIdHash][$associatedId]);
 
                     // Get referenced entity which should be loaded now and set it in source
                     $newValue = $this->getByIdHash($relatedIdHash, $entityName);
