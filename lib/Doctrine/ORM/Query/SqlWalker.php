@@ -478,6 +478,8 @@ class SqlWalker implements TreeWalker
             return '';
         }
 
+        $realEntity = $targetEntity;
+        
         switch($targetEntity->inheritanceType) {
             case ClassMetadata::INHERITANCE_TYPE_NONE:
                 break;
@@ -501,7 +503,7 @@ class SqlWalker implements TreeWalker
 
         $filterClauses = array();
         foreach ($this->em->getFilters()->getEnabledFilters() as $filter) {
-            if ('' !== $filterExpr = $filter->addFilterConstraint($targetEntity, $targetTableAlias)) {
+            if ('' !== $filterExpr = $filter->addFilterConstraint($targetEntity, $targetTableAlias, $realEntity)) {
                 $filterClauses[] = '(' . $filterExpr . ')';
             }
         }
