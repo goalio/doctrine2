@@ -2695,6 +2695,11 @@ class UnitOfWork implements PropertyChangedListener
                                     $newValue = $this->em->find($assoc['targetEntity'], $associatedId);
                                     break;
                             }
+                            
+                            // GoalioSecurity: Regular fetch returned null, so we can't store its hash in the identifier map. Break here.
+                            if($newValue === null) {
+                               break;
+                            }
 
                             // PERF: Inlined & optimized code from UnitOfWork#registerManaged()
                             $newValueOid = spl_object_hash($newValue);
@@ -2710,6 +2715,12 @@ class UnitOfWork implements PropertyChangedListener
                             $this->entityStates[$newValueOid] = self::STATE_MANAGED;
                             // make sure that when an proxy is then finally loaded, $this->originalEntityData is set also!
                             break;
+                    }
+                    
+                    // GoalioSecurity: New value could not be determined therefore (if we assume doctrine is working)
+                    // this happens because we're not allow to view that value. Continue with the next association.
+                    if($newValue === null) {
+                        continue;
                     }
 
                     $this->originalEntityData[$oid][$field] = $newValue;
