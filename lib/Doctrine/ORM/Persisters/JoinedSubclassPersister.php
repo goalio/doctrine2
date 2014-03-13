@@ -288,7 +288,7 @@ class JoinedSubclassPersister extends AbstractEntityInheritancePersister
         foreach ($this->class->parentClasses as $parentClass) {
             $parentMetadata = $this->em->getClassMetadata($parentClass);
             $parentTable    = $this->quoteStrategy->getTableName($parentMetadata, $this->platform);
-            
+
             $this->conn->delete($parentTable, $id);
         }
     }
@@ -342,7 +342,7 @@ class JoinedSubclassPersister extends AbstractEntityInheritancePersister
 
         // If the current class in the root entity, add the filters
         if ($filterSql = $this->generateFilterConditionSQL($this->em->getClassMetadata($this->class->rootEntityName), $this->getSQLTableAlias($this->class->rootEntityName))) {
-            $conditionSql .= $conditionSql 
+            $conditionSql .= $conditionSql
                 ? ' AND ' . $filterSql
                 : $filterSql;
         }
@@ -373,12 +373,25 @@ class JoinedSubclassPersister extends AbstractEntityInheritancePersister
                 break;
         }
 
+
+        // Security Joins
+        $secureJoinSql = '';
+
+        if($this->em instanceof \GoalioSecurity\ORM\SecureEntityManager) {
+            /** @var \Doctrine\ORM\Mapping\ClassMetadata $rootClass */
+            $rootClass = $this->em->getClassMetadata($this->class->rootEntityName);
+            $tableAlias = $this->getSQLTableAlias($rootClass->name);
+
+            $secureJoinSql = $this->em->getSecureJoinConditionSql($rootClass, $tableAlias);
+        }
+
         $tableName  = $this->quoteStrategy->getTableName($this->class, $this->platform);
         $where      = $conditionSql != '' ? ' WHERE ' . $conditionSql : '';
         $columnList = $this->getSelectColumnsSQL();
         $query      = 'SELECT '  . $columnList
                     . ' FROM '
                     . $tableName . ' ' . $baseTableAlias
+                    . $secureJoinSql
                     . $joinSql
                     . $where
                     . $orderBySql;
@@ -488,8 +501,8 @@ class JoinedSubclassPersister extends AbstractEntityInheritancePersister
 
             // Add join columns (foreign keys)
             foreach ($subClass->associationMappings as $mapping) {
-                if ( ! $mapping['isOwningSide'] 
-                        || ! ($mapping['type'] & ClassMetadata::TO_ONE) 
+                if ( ! $mapping['isOwningSide']
+                        || ! ($mapping['type'] & ClassMetadata::TO_ONE)
                         || isset($mapping['inherited'])) {
                     continue;
                 }
@@ -505,17 +518,17 @@ class JoinedSubclassPersister extends AbstractEntityInheritancePersister
         }
 
         $this->selectColumnListSql = implode(', ', $columnList);
-        
+
         return $this->selectColumnListSql;
     }
 
     /**
-     * {@inheritdoc} 
+     * {@inheritdoc}
      */
     protected function getInsertColumnList()
     {
         // Identifier columns must always come first in the column list of subclasses.
-        $columns = $this->class->parentClasses 
+        $columns = $this->class->parentClasses
             ? $this->class->getIdentifierColumnNames()
             : array();
 

@@ -36,8 +36,8 @@ use Doctrine\Common\Util\ClassUtils;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\Common\Collections\Expr\Comparison;
 
-use GoalioDoctrine\Persisters\SmartSqlExpressionVisitor as SqlExpressionVisitor; 
-use GoalioDoctrine\Persisters\SmartSqlValueVisitor as SqlValueVisitor; 
+use GoalioDoctrine\Persisters\SmartSqlExpressionVisitor as SqlExpressionVisitor;
+use GoalioDoctrine\Persisters\SmartSqlValueVisitor as SqlValueVisitor;
 
 /**
  * A BasicEntityPersister maps an entity to a single table in a relational database.
@@ -232,15 +232,15 @@ class BasicEntityPersister
     {
         return $this->class;
     }
-	
+
 	/**
 	 * @return \Doctrine\ORM\EntityManager
 	 */
-    public function getEntityManager() 
+    public function getEntityManager()
 	{
 	    return $this->em;
 	}
-	 
+
 
     /**
      * Adds an entity to the queued insertions.
@@ -428,7 +428,7 @@ class BasicEntityPersister
 
                     break;
             }
- 
+
             $params[]   = $value;
             $set[]      = $column . ' = ' . $placeholder;
             $types[]    = $this->columnTypes[$columnName];
@@ -862,7 +862,7 @@ class BasicEntityPersister
         $sql = $this->getSelectSQL($id, null, $lockMode);
         list($params, $types) = $this->expandParameters($id);
         $stmt = $this->conn->executeQuery($sql, $params, $types);
- 
+
         $hydrator = $this->em->newHydrator(Query::HYDRATE_OBJECT);
         $hydrator->hydrateAll($stmt, $this->rsm, array(Query::HINT_REFRESH => true));
     }
@@ -1142,7 +1142,7 @@ class BasicEntityPersister
         $tableName  = $this->quoteStrategy->getTableName($this->class, $this->platform);
 
         if ('' !== $filterSql) {
-            $conditionSql = $conditionSql 
+            $conditionSql = $conditionSql
                 ? $conditionSql . ' AND ' . $filterSql
                 : $filterSql;
         }
@@ -1152,6 +1152,12 @@ class BasicEntityPersister
         $join   = $this->selectJoinSql . $joinSql;
         $where  = ($conditionSql ? ' WHERE ' . $conditionSql : '');
         $lock   = $this->platform->appendLockHint($from, $lockMode);
+
+        // Security Joins
+        if($this->em instanceof \GoalioSecurity\ORM\SecureEntityManager) {
+            $lock .= $this->em->getSecureJoinConditionSql($this->class, $tableAlias);
+        }
+
         $query  = $select
             . $lock
             . $join
@@ -1295,7 +1301,7 @@ class BasicEntityPersister
             if ($assoc['isOwningSide']) {
                 $tableAlias           = $this->getSQLTableAlias($association['targetEntity'], $assocAlias);
                 $this->selectJoinSql .= ' ' . $this->getJoinSQLForJoinColumns($association['joinColumns']);
-                
+
                 foreach ($association['joinColumns'] as $joinColumn) {
                     $sourceCol       = $this->quoteStrategy->getJoinColumnName($joinColumn, $this->class, $this->platform);
                     $targetCol       = $this->quoteStrategy->getReferencedJoinColumnName($joinColumn, $this->class, $this->platform);
@@ -1321,7 +1327,14 @@ class BasicEntityPersister
                 }
             }
 
-            $this->selectJoinSql .= ' ' . $joinTableName . ' ' . $joinTableAlias . ' ON ';
+            $this->selectJoinSql .= ' (' . $joinTableName . ' ' . $joinTableAlias;
+
+            // Security Joins
+            if($this->em instanceof \GoalioSecurity\ORM\SecureEntityManager) {
+                $this->selectJoinSql .= $this->em->getSecureJoinConditionSql($eagerEntity, $joinTableAlias);
+            }
+
+            $this->selectJoinSql .= ') ON ';
             $this->selectJoinSql .= implode(' AND ', $joinCondition);
         }
 
@@ -1427,7 +1440,7 @@ class BasicEntityPersister
         foreach ($columns as $column) {
             $placeholder = '?';
 
-            if (isset($this->class->fieldNames[$column]) 
+            if (isset($this->class->fieldNames[$column])
                 && isset($this->columnTypes[$this->class->fieldNames[$column]])
                 && isset($this->class->fieldMappings[$this->class->fieldNames[$column]]['requireSQLConversion'])) {
 
@@ -1500,7 +1513,7 @@ class BasicEntityPersister
         $columnName     = $this->quoteStrategy->getColumnName($field, $class, $this->platform);
         $sql            = $tableAlias . '.' . $columnName;
         $columnAlias    = $this->getSQLColumnAlias($class->columnNames[$field]);
-        
+
         $this->rsm->addFieldResult($alias, $columnAlias, $field);
 
         if (isset($class->fieldMappings[$field]['requireSQLConversion'])) {

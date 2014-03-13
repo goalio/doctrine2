@@ -479,7 +479,7 @@ class SqlWalker implements TreeWalker
         }
 
         $realEntity = $targetEntity;
-        
+
         switch($targetEntity->inheritanceType) {
             case ClassMetadata::INHERITANCE_TYPE_NONE:
                 break;
@@ -520,8 +520,20 @@ class SqlWalker implements TreeWalker
         $offset   = $this->query->getFirstResult();
         $lockMode = $this->query->getHint(Query::HINT_LOCK_MODE);
         $sql      = $this->walkSelectClause($AST->selectClause)
-            . $this->walkFromClause($AST->fromClause)
-            . $this->walkWhereClause($AST->whereClause);
+            . $this->walkFromClause($AST->fromClause);
+
+        // Security Joins
+        if($this->em instanceof \GoalioSecurity\ORM\SecureEntityManager) {
+            foreach ($this->rootAliases as $dqlAlias) {
+                /** @var \Doctrine\ORM\Mapping\ClassMetadata $class */
+                $class = $this->queryComponents[$dqlAlias]['metadata'];
+                $tableAlias = $this->getSQLTableAlias($class->table['name'], $dqlAlias);
+
+                $sql .= $this->em->getSecureJoinConditionSql($class, $tableAlias);
+            }
+        }
+
+        $sql .= $this->walkWhereClause($AST->whereClause);
 
         if ($AST->groupByClause) {
             $sql .= $this->walkGroupByClause($AST->groupByClause);
@@ -938,7 +950,18 @@ class SqlWalker implements TreeWalker
                     $conditions[] = $filterExpr;
                 }
 
-                $sql .= $targetTableName . ' ' . $targetTableAlias . ' ON ' . implode(' AND ', $conditions);
+                $sql .= '(' . $targetTableName . ' ' . $targetTableAlias;
+
+                // Security Joins
+                if($this->em instanceof \GoalioSecurity\ORM\SecureEntityManager) {
+                    /** @var \Doctrine\ORM\Mapping\ClassMetadata $rootClass */
+                    $rootClass = $this->em->getClassMetadata($targetClass->rootEntityName);
+                    $tableAlias = $this->getSQLTableAlias($rootClass->table['name'], $joinedDqlAlias);
+
+                    $sql .= $this->em->getSecureJoinConditionSql($rootClass, $tableAlias);
+                }
+
+                $sql .= ') ON ' . implode(' AND ', $conditions);
                 break;
 
             case ($assoc['type'] == ClassMetadata::MANY_TO_MANY):
@@ -990,7 +1013,18 @@ class SqlWalker implements TreeWalker
                     $conditions[] = $filterExpr;
                 }
 
-                $sql .= $targetTableName . ' ' . $targetTableAlias . ' ON ' . implode(' AND ', $conditions);
+                $sql .= '(' . $targetTableName . ' ' . $targetTableAlias;
+
+                // Security Joins
+                if($this->em instanceof \GoalioSecurity\ORM\SecureEntityManager) {
+                    /** @var \Doctrine\ORM\Mapping\ClassMetadata $rootClass */
+                    $rootClass = $this->em->getClassMetadata($targetClass->rootEntityName);
+                    $tableAlias = $this->getSQLTableAlias($rootClass->table['name'], $joinedDqlAlias);
+
+                    $sql .= $this->em->getSecureJoinConditionSql($rootClass, $tableAlias);
+                }
+
+                $sql .= ') ON ' . implode(' AND ', $conditions);
                 break;
         }
 
