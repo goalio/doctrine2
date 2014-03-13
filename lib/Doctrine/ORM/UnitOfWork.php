@@ -2666,7 +2666,8 @@ class UnitOfWork implements PropertyChangedListener
                             if ($hints['fetchMode'][$class->name][$field] == ClassMetadata::FETCH_EAGER
                                 && isset($hints[self::HINT_DEFEREAGERLOAD]) && !$targetClass->isIdentifierComposite) {
                                 $this->eagerLoadingEntities[$targetClass->rootEntityName][$relatedIdHash] = current($associatedId);
-                                $this->eagerLoadingInheritedEntities[$targetClass->rootEntityName][$relatedIdHash][current($associatedId)] = array($entity, $class, $field);
+                                $relatedObjectHash = spl_object_hash($entity);
+                                $this->eagerLoadingInheritedEntities[$targetClass->rootEntityName][$relatedIdHash][$relatedObjectHash] = array($entity, $class, $field);
                                 // Will be replaced immediately, but necessary for reflection
                                 $newValue = $this->em->getProxyFactory()->getProxy($assoc['targetEntity'], $associatedId);
                             }
@@ -2769,7 +2770,6 @@ class UnitOfWork implements PropertyChangedListener
     public function triggerEagerLoads()
     {
         if ( ! $this->eagerLoadingEntities) {
-			$this->eagerLoadingInheritedEntities = array();
             return;
         }
 
@@ -2791,25 +2791,26 @@ class UnitOfWork implements PropertyChangedListener
                 array_combine($class->identifier, array(array_values($ids)))
             );
 
-			// Allow deferred loading of related entities with subclasses
+	    // Allow deferred loading of related entities with subclasses
             foreach($ids as $relatedIdHash => $associatedId) {
-                if(isset($eagerLoadingInheritedEntities[$entityName][$relatedIdHash][$associatedId])) {
+                if(isset($eagerLoadingInheritedEntities[$entityName][$relatedIdHash])) {
+                    foreach($eagerLoadingInheritedEntities[$entityName][$relatedIdHash] as $relatedObjectHash => $definition) {
+                        // get additional information about the source entity
+                        list($entity, $class, $field) = $definition;
 
-                    // get additional information about the source entity
-                    list($entity, $class, $field) = $eagerLoadingInheritedEntities[$entityName][$relatedIdHash][$associatedId];
-                    unset($eagerLoadingInheritedEntities[$entityName][$relatedIdHash][$associatedId]);
+                        // Get referenced entity which should be loaded now and set it in source
+                        if($newValue = $this->tryGetByIdHash($relatedIdHash, $entityName)) {
+                            $class->reflFields[$field]->setValue($entity, $newValue);
 
-                    // Get referenced entity which should be loaded now and set it in source
-                    if($newValue = $this->tryGetByIdHash($relatedIdHash, $entityName)) {
-                        $class->reflFields[$field]->setValue($entity, $newValue);
-
-                        // Override original data
-                        $oid = spl_object_hash($entity);
-                        $this->originalEntityData[$oid][$field] = $newValue;
+                            // Override original data
+                            $oid = spl_object_hash($entity);
+                            $this->originalEntityData[$oid][$field] = $newValue;
+                        }
                     }
                 }
-            }
+            }   
         }
+        $this->eagerLoadingInheritedEntities = array();
     }
 
     /**
