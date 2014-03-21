@@ -377,13 +377,11 @@ class JoinedSubclassPersister extends AbstractEntityInheritancePersister
         // Security Joins
         $secureJoinSql = '';
 
-        if($this->em instanceof \GoalioSecurity\ORM\SecureEntityManager) {
-            /** @var \Doctrine\ORM\Mapping\ClassMetadata $rootClass */
-            $rootClass = $this->em->getClassMetadata($this->class->rootEntityName);
-            $tableAlias = $this->getSQLTableAlias($rootClass->name);
+        /** @var \Doctrine\ORM\Mapping\ClassMetadata $rootClass */
+        $rootClass = $this->em->getClassMetadata($this->class->rootEntityName);
+        $tableAlias = $this->getSQLTableAlias($rootClass->name);
 
-            $secureJoinSql = $this->em->getSecureJoinConditionSql($rootClass, $tableAlias);
-        }
+        $secureJoinSql = $this->em->getSecureJoinConditionSql($rootClass, $tableAlias);
 
         $tableName  = $this->quoteStrategy->getTableName($this->class, $this->platform);
         $where      = $conditionSql != '' ? ' WHERE ' . $conditionSql : '';

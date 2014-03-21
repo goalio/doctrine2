@@ -1153,10 +1153,7 @@ class BasicEntityPersister
         $where  = ($conditionSql ? ' WHERE ' . $conditionSql : '');
         $lock   = $this->platform->appendLockHint($from, $lockMode);
 
-        // Security Joins
-        if($this->em instanceof \GoalioSecurity\ORM\SecureEntityManager) {
-            $lock .= $this->em->getSecureJoinConditionSql($this->class, $tableAlias);
-        }
+        $lock .= $this->em->getSecureJoinConditionSql($this->class, $tableAlias);
 
         $query  = $select
             . $lock
@@ -1329,10 +1326,7 @@ class BasicEntityPersister
 
             $this->selectJoinSql .= ' (' . $joinTableName . ' ' . $joinTableAlias;
 
-            // Security Joins
-            if($this->em instanceof \GoalioSecurity\ORM\SecureEntityManager) {
-                $this->selectJoinSql .= $this->em->getSecureJoinConditionSql($eagerEntity, $joinTableAlias);
-            }
+            $this->selectJoinSql .= $this->em->getSecureJoinConditionSql($eagerEntity, $joinTableAlias);
 
             $this->selectJoinSql .= ') ON ';
             $this->selectJoinSql .= implode(' AND ', $joinCondition);
