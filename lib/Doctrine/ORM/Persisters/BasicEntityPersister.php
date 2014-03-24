@@ -1153,7 +1153,7 @@ class BasicEntityPersister
         $where  = ($conditionSql ? ' WHERE ' . $conditionSql : '');
         $lock   = $this->platform->appendLockHint($from, $lockMode);
 
-        $lock .= $this->em->getSecureJoinConditionSql($this->class, $tableAlias);
+        $lock .= $this->generateJoinFilterConditionSql($this->class, $tableAlias);
 
         $query  = $select
             . $lock
@@ -1326,7 +1326,7 @@ class BasicEntityPersister
 
             $this->selectJoinSql .= ' (' . $joinTableName . ' ' . $joinTableAlias;
 
-            $this->selectJoinSql .= $this->em->getSecureJoinConditionSql($eagerEntity, $joinTableAlias);
+            $this->selectJoinSql .= $this->generateJoinFilterConditionSql($eagerEntity, $joinTableAlias);
 
             $this->selectJoinSql .= ') ON ';
             $this->selectJoinSql .= implode(' AND ', $joinCondition);
@@ -1998,4 +1998,29 @@ class BasicEntityPersister
         $sql = implode(' AND ', $filterClauses);
         return $sql ? "(" . $sql . ")" : ""; // Wrap again to avoid "X or Y and FilterConditionSQL"
     }
+
+
+    protected function generateJoinFilterConditionSQL(ClassMetadata $targetEntity, $targetTableAlias)
+    {
+        $sql = '';
+
+        if (!$this->em->hasFilters()) {
+            return $sql;
+        }
+
+
+        foreach ($this->em->getFilters()->getEnabledFilters() as $filter) {
+            if(!$filter instanceof JoinFilterInterface) {
+                continue;
+            }
+
+            if ('' !== $filterExpr = $filter->addJoinConstraint($targetEntity, $targetTableAlias)) {
+                $sql .= $filterExpr;
+            }
+        }
+
+        return $sql;
+    }
+
+
 }

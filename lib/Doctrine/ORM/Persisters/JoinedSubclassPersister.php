@@ -381,7 +381,7 @@ class JoinedSubclassPersister extends AbstractEntityInheritancePersister
         $rootClass = $this->em->getClassMetadata($this->class->rootEntityName);
         $tableAlias = $this->getSQLTableAlias($rootClass->name);
 
-        $secureJoinSql = $this->em->getSecureJoinConditionSql($rootClass, $tableAlias);
+        $secureJoinSql = $this->generateJoinFilterConditionSQL($rootClass, $tableAlias);
 
         $tableName  = $this->quoteStrategy->getTableName($this->class, $this->platform);
         $where      = $conditionSql != '' ? ' WHERE ' . $conditionSql : '';

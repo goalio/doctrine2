@@ -26,6 +26,7 @@ use Doctrine\ORM\Query;
 use Doctrine\ORM\Query\QueryException;
 use Doctrine\ORM\OptimisticLockException;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
+use GoalioDoctrine\Query\Filter\JoinFilterInterface;
 
 /**
  * The SqlWalker is a TreeWalker that walks over a DQL AST and constructs
@@ -511,6 +512,29 @@ class SqlWalker implements TreeWalker
         return implode(' AND ', $filterClauses);
     }
 
+
+
+    private function generateJoinFilterConditionSQL(ClassMetadata $targetEntity, $targetTableAlias)
+    {
+        $sql = '';
+
+        if (!$this->em->hasFilters()) {
+            return $sql;
+        }
+
+        foreach ($this->em->getFilters()->getEnabledFilters() as $filter) {
+            if(!$filter instanceof JoinFilterInterface) {
+                continue;
+            }
+
+            if ('' !== $filterExpr = $filter->addJoinConstraint($targetEntity, $targetTableAlias)) {
+                $sql .= $filterExpr;
+            }
+        }
+
+        return $sql;
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -527,7 +551,7 @@ class SqlWalker implements TreeWalker
             $class = $this->queryComponents[$dqlAlias]['metadata'];
             $tableAlias = $this->getSQLTableAlias($class->table['name'], $dqlAlias);
 
-            $sql .= $this->em->getSecureJoinConditionSql($class, $tableAlias);
+            $sql .= $this->generateJoinFilterConditionSQL($class, $tableAlias);
         }
 
         $sql .= $this->walkWhereClause($AST->whereClause);
@@ -953,7 +977,7 @@ class SqlWalker implements TreeWalker
                 $rootClass = $this->em->getClassMetadata($targetClass->rootEntityName);
                 $tableAlias = $this->getSQLTableAlias($rootClass->table['name'], $joinedDqlAlias);
 
-                $sql .= $this->em->getSecureJoinConditionSql($rootClass, $tableAlias);
+                $sql .= $this->generateJoinFilterConditionSQL($rootClass, $tableAlias);
 
                 $sql .= ') ON ' . implode(' AND ', $conditions);
                 break;
@@ -1013,7 +1037,7 @@ class SqlWalker implements TreeWalker
                 $rootClass = $this->em->getClassMetadata($targetClass->rootEntityName);
                 $tableAlias = $this->getSQLTableAlias($rootClass->table['name'], $joinedDqlAlias);
 
-                $sql .= $this->em->getSecureJoinConditionSql($rootClass, $tableAlias);
+                $sql .= $this->generateJoinFilterConditionSQL($rootClass, $tableAlias);
 
                 $sql .= ') ON ' . implode(' AND ', $conditions);
                 break;
