@@ -1153,7 +1153,7 @@ class BasicEntityPersister
         $where  = ($conditionSql ? ' WHERE ' . $conditionSql : '');
         $lock   = $this->platform->appendLockHint($from, $lockMode);
 
-        $lock .= $this->generateJoinFilterConditionSql($this->class, $tableAlias);
+        $lock .= $this->generateJoinFilterConditionSql($this->class, $tableAlias, $this->class, $tableAlias);
 
         $query  = $select
             . $lock
@@ -1326,7 +1326,7 @@ class BasicEntityPersister
 
             $this->selectJoinSql .= ' (' . $joinTableName . ' ' . $joinTableAlias;
 
-            $this->selectJoinSql .= $this->generateJoinFilterConditionSql($eagerEntity, $joinTableAlias);
+            $this->selectJoinSql .= $this->generateJoinFilterConditionSql($eagerEntity, $joinTableAlias, $eagerEntity, $joinTableAlias);
 
             $this->selectJoinSql .= ') ON ';
             $this->selectJoinSql .= implode(' AND ', $joinCondition);
@@ -2000,7 +2000,7 @@ class BasicEntityPersister
     }
 
 
-    protected function generateJoinFilterConditionSQL(ClassMetadata $targetEntity, $targetTableAlias)
+    protected function generateJoinFilterConditionSQL(ClassMetadata $targetEntity, $targetTableAlias, ClassMetadata $rootEntity, $rootTableAlias)
     {
         $sql = '';
 
@@ -2014,7 +2014,7 @@ class BasicEntityPersister
                 continue;
             }
 
-            if ('' !== $filterExpr = $filter->addJoinConstraint($targetEntity, $targetTableAlias)) {
+            if ('' !== $filterExpr = $filter->addJoinConstraint($targetEntity, $targetTableAlias, $rootEntity, $rootTableAlias)) {
                 $sql .= $filterExpr;
             }
         }

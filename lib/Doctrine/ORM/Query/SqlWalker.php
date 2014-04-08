@@ -514,7 +514,7 @@ class SqlWalker implements TreeWalker
 
 
 
-    private function generateJoinFilterConditionSQL(ClassMetadata $targetEntity, $targetTableAlias)
+    private function generateJoinFilterConditionSQL(ClassMetadata $targetEntity, $targetTableAlias, ClassMetadata $rootEntity, $rootTableAlias)
     {
         $sql = '';
 
@@ -527,7 +527,7 @@ class SqlWalker implements TreeWalker
                 continue;
             }
 
-            if ('' !== $filterExpr = $filter->addJoinConstraint($targetEntity, $targetTableAlias)) {
+            if ('' !== $filterExpr = $filter->addJoinConstraint($targetEntity, $targetTableAlias, $rootEntity, $rootTableAlias)) {
                 $sql .= $filterExpr;
             }
         }
@@ -551,7 +551,10 @@ class SqlWalker implements TreeWalker
             $class = $this->queryComponents[$dqlAlias]['metadata'];
             $tableAlias = $this->getSQLTableAlias($class->table['name'], $dqlAlias);
 
-            $sql .= $this->generateJoinFilterConditionSQL($class, $tableAlias);
+            $rootClass = $this->em->getClassMetadata($class->rootEntityName);
+            $rootAlias = $this->getSQLTableAlias($rootClass->table['name'], $dqlAlias);
+
+            $sql .= $this->generateJoinFilterConditionSQL($class, $tableAlias, $rootClass, $rootAlias);
         }
 
         $sql .= $this->walkWhereClause($AST->whereClause);
@@ -975,9 +978,9 @@ class SqlWalker implements TreeWalker
 
                 /** @var \Doctrine\ORM\Mapping\ClassMetadata $rootClass */
                 $rootClass = $this->em->getClassMetadata($targetClass->rootEntityName);
-                $tableAlias = $this->getSQLTableAlias($rootClass->table['name'], $joinedDqlAlias);
+                $rootAlias = $this->getSQLTableAlias($rootClass->table['name'], $joinedDqlAlias);
 
-                $sql .= $this->generateJoinFilterConditionSQL($rootClass, $tableAlias);
+                $sql .= $this->generateJoinFilterConditionSQL($targetClass, $targetTableAlias, $rootClass, $rootAlias);
 
                 $sql .= ') ON ' . implode(' AND ', $conditions);
                 break;
@@ -1035,9 +1038,9 @@ class SqlWalker implements TreeWalker
 
                 /** @var \Doctrine\ORM\Mapping\ClassMetadata $rootClass */
                 $rootClass = $this->em->getClassMetadata($targetClass->rootEntityName);
-                $tableAlias = $this->getSQLTableAlias($rootClass->table['name'], $joinedDqlAlias);
+                $rootAlias = $this->getSQLTableAlias($rootClass->table['name'], $joinedDqlAlias);
 
-                $sql .= $this->generateJoinFilterConditionSQL($rootClass, $tableAlias);
+                $sql .= $this->generateJoinFilterConditionSQL($targetClass, $targetTableAlias, $rootClass, $rootAlias);
 
                 $sql .= ') ON ' . implode(' AND ', $conditions);
                 break;
