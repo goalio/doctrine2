@@ -2010,7 +2010,7 @@ class BasicEntityPersister
 
 
         foreach ($this->em->getFilters()->getEnabledFilters() as $filter) {
-            if(!$filter instanceof JoinFilterInterface) {
+            if(!$filter instanceof \GoalioDoctrine\Query\Filter\JoinFilterInterface) {
                 continue;
             }
 
