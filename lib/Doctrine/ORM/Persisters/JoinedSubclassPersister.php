@@ -389,8 +389,8 @@ class JoinedSubclassPersister extends AbstractEntityInheritancePersister
         $query      = 'SELECT '  . $columnList
                     . ' FROM '
                     . $tableName . ' ' . $baseTableAlias
-                    . $secureJoinSql
                     . $joinSql
+                    . $secureJoinSql
                     . $where
                     . $orderBySql;
 
