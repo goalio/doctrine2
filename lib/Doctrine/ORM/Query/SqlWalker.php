@@ -26,6 +26,7 @@ use Doctrine\ORM\Query;
 use Doctrine\ORM\Query\QueryException;
 use Doctrine\ORM\OptimisticLockException;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
+use GoalioDoctrine\Query\Filter\JoinFilterInterface;
 
 /**
  * The SqlWalker is a TreeWalker that walks over a DQL AST and constructs
@@ -344,6 +345,9 @@ class SqlWalker implements TreeWalker
 
         $baseTableAlias = $this->getSQLTableAlias($class->getTableName(), $dqlAlias);
 
+        $rootClass = $this->em->getClassMetadata($class->rootEntityName);
+        $rootAlias = $this->getSQLTableAlias($rootClass->table['name'], $dqlAlias);
+
         // INNER JOIN parent class tables
         foreach ($class->parentClasses as $parentClassName) {
             $parentClass = $this->em->getClassMetadata($parentClassName);
@@ -351,7 +355,13 @@ class SqlWalker implements TreeWalker
 
             // If this is a joined association we must use left joins to preserve the correct result.
             $sql .= isset($this->queryComponents[$dqlAlias]['relation']) ? ' LEFT ' : ' INNER ';
-            $sql .= 'JOIN ' . $this->quoteStrategy->getTableName($parentClass, $this->platform) . ' ' . $tableAlias . ' ON ';
+            $sql .= 'JOIN (' . $this->quoteStrategy->getTableName($parentClass, $this->platform) . ' ' . $tableAlias;
+
+            if($parentClass === $rootClass) {
+                $sql .= $this->generateJoinFilterConditionSQL($parentClass, $tableAlias, $rootClass, $rootAlias);
+            }
+
+            $sql .= ') ON ';
 
             $sqlParts = array();
 
@@ -479,7 +489,7 @@ class SqlWalker implements TreeWalker
         }
 
         $realEntity = $targetEntity;
-        
+
         switch($targetEntity->inheritanceType) {
             case ClassMetadata::INHERITANCE_TYPE_NONE:
                 break;
@@ -511,6 +521,29 @@ class SqlWalker implements TreeWalker
         return implode(' AND ', $filterClauses);
     }
 
+
+
+    private function generateJoinFilterConditionSQL(ClassMetadata $targetEntity, $targetTableAlias, ClassMetadata $rootEntity, $rootTableAlias)
+    {
+        $sql = '';
+
+        if (!$this->em->hasFilters()) {
+            return $sql;
+        }
+
+        foreach ($this->em->getFilters()->getEnabledFilters() as $filter) {
+            if(!$filter instanceof JoinFilterInterface) {
+                continue;
+            }
+
+            if ('' !== $filterExpr = $filter->addJoinConstraint($targetEntity, $targetTableAlias, $rootEntity, $rootTableAlias)) {
+                $sql .= $filterExpr;
+            }
+        }
+
+        return $sql;
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -520,8 +553,22 @@ class SqlWalker implements TreeWalker
         $offset   = $this->query->getFirstResult();
         $lockMode = $this->query->getHint(Query::HINT_LOCK_MODE);
         $sql      = $this->walkSelectClause($AST->selectClause)
-            . $this->walkFromClause($AST->fromClause)
-            . $this->walkWhereClause($AST->whereClause);
+            . $this->walkFromClause($AST->fromClause);
+
+        foreach ($this->rootAliases as $dqlAlias) {
+            /** @var \Doctrine\ORM\Mapping\ClassMetadata $class */
+            $class = $this->queryComponents[$dqlAlias]['metadata'];
+            $tableAlias = $this->getSQLTableAlias($class->table['name'], $dqlAlias);
+
+            $rootClass = $this->em->getClassMetadata($class->rootEntityName);
+            $rootAlias = $this->getSQLTableAlias($rootClass->table['name'], $dqlAlias);
+
+            if($class === $rootClass) {
+                $sql .= $this->generateJoinFilterConditionSQL($class, $tableAlias, $rootClass, $rootAlias);
+            }                        
+        }
+
+        $sql .= $this->walkWhereClause($AST->whereClause);
 
         if ($AST->groupByClause) {
             $sql .= $this->walkGroupByClause($AST->groupByClause);
@@ -938,7 +985,18 @@ class SqlWalker implements TreeWalker
                     $conditions[] = $filterExpr;
                 }
 
-                $sql .= $targetTableName . ' ' . $targetTableAlias . ' ON ' . implode(' AND ', $conditions);
+                $sql .= '(' . $targetTableName . ' ' . $targetTableAlias;
+
+                /** @var \Doctrine\ORM\Mapping\ClassMetadata $rootClass */
+                $rootClass = $this->em->getClassMetadata($targetClass->rootEntityName);
+                $rootAlias = $this->getSQLTableAlias($rootClass->table['name'], $joinedDqlAlias);
+
+                // If unequal the target class is the child and does not own the discriminator column, join condition will be added to root entity
+                if($rootAlias === $targetTableAlias) {
+                    $sql .= $this->generateJoinFilterConditionSQL($targetClass, $targetTableAlias, $rootClass, $rootAlias);
+                }
+
+                $sql .= ') ON ' . implode(' AND ', $conditions);
                 break;
 
             case ($assoc['type'] == ClassMetadata::MANY_TO_MANY):
@@ -990,7 +1048,18 @@ class SqlWalker implements TreeWalker
                     $conditions[] = $filterExpr;
                 }
 
-                $sql .= $targetTableName . ' ' . $targetTableAlias . ' ON ' . implode(' AND ', $conditions);
+                $sql .= '(' . $targetTableName . ' ' . $targetTableAlias;
+
+                /** @var \Doctrine\ORM\Mapping\ClassMetadata $rootClass */
+                $rootClass = $this->em->getClassMetadata($targetClass->rootEntityName);
+                $rootAlias = $this->getSQLTableAlias($rootClass->table['name'], $joinedDqlAlias);
+
+                // If unequal the target class is the child and does not own the discriminator column, join condition will be added to root entity
+                if($rootAlias === $targetTableAlias) {
+                    $sql .= $this->generateJoinFilterConditionSQL($targetClass, $targetTableAlias, $rootClass, $rootAlias);
+                }
+
+                $sql .= ') ON ' . implode(' AND ', $conditions);
                 break;
         }
 
