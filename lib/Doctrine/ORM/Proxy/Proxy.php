@@ -29,4 +29,5 @@ use Doctrine\Common\Proxy\Proxy as BaseProxy;
  */
 interface Proxy extends BaseProxy
 {
+    const PROXY_LOADING_FAILED = 8;
 }

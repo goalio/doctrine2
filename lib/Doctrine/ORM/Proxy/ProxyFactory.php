@@ -170,11 +170,13 @@ class ProxyFactory extends AbstractProxyFactory
             $proxy->__setInitialized(true);
 
             if (null === $entityPersister->load($classMetadata->getIdentifierValues($proxy), $proxy)) {
-                $proxy->__setInitializer($initializer);
-                $proxy->__setCloner($cloner);
-                $proxy->__setInitialized(false);
+                //$proxy->__setInitializer($initializer);
+                //$proxy->__setCloner($cloner);
+                //$proxy->__setInitialized(false);
 
                 //throw new EntityNotFoundException();
+
+                $proxy->__setInitialized(Proxy::PROXY_LOADING_FAILED);
             }
         };
     }
