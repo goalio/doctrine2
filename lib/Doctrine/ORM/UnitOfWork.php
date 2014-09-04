@@ -620,6 +620,11 @@ class UnitOfWork implements PropertyChangedListener
                     continue;
                 }
 
+                // Skip equal dates
+                if($orgValue instanceof \DateTime && $actualValue instanceof \DateTime && $orgValue == $actualValue) {
+                    continue;
+                }
+
                 // if regular field
                 if ( ! isset($class->associationMappings[$propName])) {
                     if ($isChangeTrackingNotify) {
@@ -2474,6 +2479,7 @@ class UnitOfWork implements PropertyChangedListener
      */
     public function createEntity($className, array $data, &$hints = array())
     {
+
         $class = $this->em->getClassMetadata($className);
         //$isReadOnly = isset($hints[Query::HINT_READ_ONLY]);
 
@@ -2594,6 +2600,7 @@ class UnitOfWork implements PropertyChangedListener
             }
 
             // Generic Reference to replace IdEntityProxy with concrete EntityProxy
+            // TODO: If the target is a subclass only the rootEntity id is stored, which causes eager loading
             if($assoc['targetEntity'] == 'GoalioDoctrine\Model\Entities\IdEntity' && $data['clazz_id'] !== null) {
                 $assoc['targetEntity'] = $this->em->getClassMetadata($data['clazz_id'])->name;
             }
