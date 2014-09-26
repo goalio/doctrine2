@@ -149,7 +149,12 @@ class OneToManyPersister extends AbstractCollectionPersister
             // Generic Reference
             if($targetClass->associationMappings[$mapping['mappedBy']]['targetEntity'] == 'GoalioDoctrine\Model\Entities\IdEntity'
             && $sourceClass->fieldNames[$joinColumn['referencedColumnName']] == '__clazz_id__') {
-                $params[] = $coll->getTypeClass()->getId();
+                // Root class
+                $clazzId = $this->em->getClassMetadata($coll->getTypeClass()->rootEntityName)->getId();
+                $params[] = $clazzId;
+
+                // Concrete class
+                //$params[] = $coll->getTypeClass()->getId();
                 continue;
             } 
 

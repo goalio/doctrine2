@@ -345,8 +345,8 @@ class SqlWalker implements TreeWalker
 
         $baseTableAlias = $this->getSQLTableAlias($class->getTableName(), $dqlAlias);
 
-        $rootClass = $this->em->getClassMetadata($class->rootEntityName);
-        $rootAlias = $this->getSQLTableAlias($rootClass->table['name'], $dqlAlias);
+//        $rootClass = $this->em->getClassMetadata($class->rootEntityName);
+//        $rootAlias = $this->getSQLTableAlias($rootClass->table['name'], $dqlAlias);
 
         // INNER JOIN parent class tables
         foreach ($class->parentClasses as $parentClassName) {
@@ -357,9 +357,10 @@ class SqlWalker implements TreeWalker
             $sql .= isset($this->queryComponents[$dqlAlias]['relation']) ? ' LEFT ' : ' INNER ';
             $sql .= 'JOIN (' . $this->quoteStrategy->getTableName($parentClass, $this->platform) . ' ' . $tableAlias;
 
-            if($parentClass === $rootClass) {
-                $sql .= $this->generateJoinFilterConditionSQL($parentClass, $tableAlias, $rootClass, $rootAlias);
-            }
+//            dump ("parent");
+//            if($parentClass === $rootClass) {
+//                $sql .= $this->generateJoinFilterConditionSQL($parentClass, $tableAlias, $rootClass, $rootAlias);
+//            }
 
             $sql .= ') ON ';
 
@@ -563,9 +564,7 @@ class SqlWalker implements TreeWalker
             $rootClass = $this->em->getClassMetadata($class->rootEntityName);
             $rootAlias = $this->getSQLTableAlias($rootClass->table['name'], $dqlAlias);
 
-            if($class === $rootClass) {
-                $sql .= $this->generateJoinFilterConditionSQL($class, $tableAlias, $rootClass, $rootAlias);
-            }                        
+            $sql .= $this->generateJoinFilterConditionSQL($class, $tableAlias, $rootClass, $rootAlias);
         }
 
         $sql .= $this->walkWhereClause($AST->whereClause);
@@ -959,11 +958,18 @@ class SqlWalker implements TreeWalker
                     }
 
                      if($assoc['targetEntity'] == 'GoalioDoctrine\Model\Entities\IdEntity' && $quotedTargetColumn == '__clazz_id__') {
-                         $classes = array($sourceClass->getId());
-                         foreach($sourceClass->subClasses as $subClass) {
-                             $classes[] = $this->em->getClassMetadata($subClass)->getId();
-                         }
-                         $conditions[] = $targetTableAlias . '.' . $quotedSourceColumn . ' IN ('.implode(',', $classes).')';
+                         // Root class
+                         $clazzId = $this->em->getClassMetadata($sourceClass->rootEntityName)->getId();
+                         $conditions[] = $clazzId .  ' = ' . $targetTableAlias . '.' . $quotedSourceColumn;
+
+                         // Concrete class and all parent classes
+//                         $classes = array($sourceClass->getId());
+//                         foreach($sourceClass->subClasses as $subClass) {
+//                             $classes[] = $this->em->getClassMetadata($subClass)->getId();
+//                         }
+//                         $conditions[] = $targetTableAlias . '.' . $quotedSourceColumn . ' IN ('.implode(',', $classes).')';
+
+                         // Concrete  (This seems totally wrong because targetClass is used)
                          //$conditions[] = $targetClass->getId() .  ' = ' . $targetTableAlias . '.' . $quotedSourceColumn;
                          continue;
                      }

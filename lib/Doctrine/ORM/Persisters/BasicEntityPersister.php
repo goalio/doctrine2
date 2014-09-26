@@ -1790,7 +1790,12 @@ class BasicEntityPersister
             }
 
             if($owningAssoc['targetEntity'] == 'GoalioDoctrine\Model\Entities\IdEntity' && $sourceKeyColumn == '__clazz_id__') {
-                $criteria[$tableAlias . "." . $targetKeyColumn] = $sourceClass->id;
+                // Root Class
+                $clazzId = $this->em->getClassMetadata($sourceClass->rootEntityName)->getId();
+                $criteria[$tableAlias . "." . $targetKeyColumn] = $clazzId;
+
+                //Concrete Class
+                //$criteria[$tableAlias . "." . $targetKeyColumn] = $sourceClass->id;
                 continue;
             }
 
