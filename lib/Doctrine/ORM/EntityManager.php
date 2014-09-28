@@ -111,7 +111,7 @@ use Doctrine\Common\Util\ClassUtils;
      *
      * @var \Doctrine\ORM\Repository\RepositoryFactory
      */
-    private $repositoryFactory;
+    protected $repositoryFactory;
 
     /**
      * The expression builder instance used to generate query expressions.
