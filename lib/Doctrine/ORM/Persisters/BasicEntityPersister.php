@@ -757,6 +757,7 @@ class BasicEntityPersister
     {
         $sql = $this->getSelectSQL($criteria, $assoc, $lockMode, $limit, null, $orderBy);
         list($params, $types) = $this->expandParameters($criteria);
+
         $stmt = $this->conn->executeQuery($sql, $params, $types);
 
         if ($entity !== null) {
@@ -824,16 +825,23 @@ class BasicEntityPersister
 
         // TRICKY: since the association is specular source and target are flipped
         foreach ($owningAssoc['targetToSourceKeyColumns'] as $sourceKeyColumn => $targetKeyColumn) {
-            if ( ! isset($sourceClass->fieldNames[$sourceKeyColumn])) {
-                throw MappingException::joinColumnMustPointToMappedField(
-                    $sourceClass->name, $sourceKeyColumn
-                );
-            }
 
-            // unset the old value and set the new sql aliased value here. By definition
-            // unset($identifier[$targetKeyColumn] works here with how UnitOfWork::createEntity() calls this method.
-            $identifier[$this->getSQLTableAlias($targetClass->name) . "." . $targetKeyColumn] =
-                $sourceClass->reflFields[$sourceClass->fieldNames[$sourceKeyColumn]]->getValue($sourceEntity);
+            if($sourceKeyColumn == '__clazz_id__') {
+                $identifier[$this->getSQLTableAlias($targetClass->name) . "." . $targetKeyColumn] =
+                    $targetClass->getId();
+            }
+            else {
+                if ( ! isset($sourceClass->fieldNames[$sourceKeyColumn])) {
+                    throw MappingException::joinColumnMustPointToMappedField(
+                        $sourceClass->name, $sourceKeyColumn
+                    );
+                }
+
+                // unset the old value and set the new sql aliased value here. By definition
+                // unset($identifier[$targetKeyColumn] works here with how UnitOfWork::createEntity() calls this method.
+                $identifier[$this->getSQLTableAlias($targetClass->name) . "." . $targetKeyColumn] =
+                    $sourceClass->reflFields[$sourceClass->fieldNames[$sourceKeyColumn]]->getValue($sourceEntity);
+            }
 
             unset($identifier[$targetKeyColumn]);
         }
@@ -1296,8 +1304,11 @@ class BasicEntityPersister
             $joinTableName  = $this->quoteStrategy->getTableName($eagerEntity, $this->platform);
 
             if ($assoc['isOwningSide']) {
-                $tableAlias           = $this->getSQLTableAlias($association['targetEntity'], $assocAlias);
+                $targetEntity = $association['targetEntity'];
+
+                $tableAlias           = $this->getSQLTableAlias($targetEntity, $assocAlias);
                 $this->selectJoinSql .= ' ' . $this->getJoinSQLForJoinColumns($association['joinColumns']);
+
 
                 foreach ($association['joinColumns'] as $joinColumn) {
                     $sourceCol       = $this->quoteStrategy->getJoinColumnName($joinColumn, $this->class, $this->platform);
@@ -1316,6 +1327,22 @@ class BasicEntityPersister
                 $this->selectJoinSql .= ' LEFT JOIN';
 
                 foreach ($association['joinColumns'] as $joinColumn) {
+
+                    // Generic
+                    if($association['targetEntity'] == 'GoalioDoctrine\Model\Entities\IdEntity' && $joinColumn['referencedColumnName'] == '__clazz_id__') {
+                        $sourceCol       = $this->quoteStrategy->getJoinColumnName($joinColumn, $this->class, $this->platform);
+                        $clazzId         = $this->em->getClassMetadata($this->class->rootEntityName)->getId();
+                        $joinCondition[] = $this->getSQLTableAlias($association['sourceEntity'], $assocAlias) . '.' . $sourceCol . ' = '. $clazzId;
+                        continue;
+                    }
+                    if($association['targetEntity'] == 'GoalioDoctrine\Model\Entities\IdEntity') {
+                        $sourceCol       = $this->quoteStrategy->getJoinColumnName($joinColumn, $this->class, $this->platform);
+                        $targetCol       = $this->quoteStrategy->getReferencedJoinColumnName($joinColumn, $this->class, $this->platform);
+                        $joinCondition[] = $this->getSQLTableAlias($association['sourceEntity'], $assocAlias) . '.' . $sourceCol . ' = '
+                                         . $this->getSQLTableAlias($this->class->name) . '.' . $targetCol;
+                        continue;
+                    }
+
                     $sourceCol       = $this->quoteStrategy->getJoinColumnName($joinColumn, $this->class, $this->platform);
                     $targetCol       = $this->quoteStrategy->getReferencedJoinColumnName($joinColumn, $this->class, $this->platform);
 
