@@ -809,7 +809,6 @@ class BasicEntityPersister
                 $hints[Query::HINT_READ_ONLY] = true;
             }
             */
-
             $targetEntity = $this->load($identifier, null, $assoc, $hints);
 
             // Complete bidirectional association, if necessary
@@ -823,26 +822,27 @@ class BasicEntityPersister
         $sourceClass = $this->em->getClassMetadata($assoc['sourceEntity']);
         $owningAssoc = $targetClass->getAssociationMapping($assoc['mappedBy']);
 
+
         // TRICKY: since the association is specular source and target are flipped
         foreach ($owningAssoc['targetToSourceKeyColumns'] as $sourceKeyColumn => $targetKeyColumn) {
 
+            // Generic
             if($sourceKeyColumn == '__clazz_id__') {
-                $identifier[$this->getSQLTableAlias($targetClass->name) . "." . $targetKeyColumn] =
-                    $targetClass->getId();
-            }
-            else {
-                if ( ! isset($sourceClass->fieldNames[$sourceKeyColumn])) {
-                    throw MappingException::joinColumnMustPointToMappedField(
-                        $sourceClass->name, $sourceKeyColumn
-                    );
-                }
+                $identifier[$this->getSQLTableAlias($targetClass->name) . "." . $targetKeyColumn] = $sourceClass->getId();
+                unset($identifier[$targetKeyColumn]);
 
-                // unset the old value and set the new sql aliased value here. By definition
-                // unset($identifier[$targetKeyColumn] works here with how UnitOfWork::createEntity() calls this method.
-                $identifier[$this->getSQLTableAlias($targetClass->name) . "." . $targetKeyColumn] =
-                    $sourceClass->reflFields[$sourceClass->fieldNames[$sourceKeyColumn]]->getValue($sourceEntity);
+                continue;
             }
 
+            if ( ! isset($sourceClass->fieldNames[$sourceKeyColumn])) {
+                throw MappingException::joinColumnMustPointToMappedField(
+                    $sourceClass->name, $sourceKeyColumn
+                );
+            }
+            // unset the old value and set the new sql aliased value here. By definition
+            // unset($identifier[$targetKeyColumn] works here with how UnitOfWork::createEntity() calls this method.
+            $identifier[$this->getSQLTableAlias($targetClass->name) . "." . $targetKeyColumn] =
+                $sourceClass->reflFields[$sourceClass->fieldNames[$sourceKeyColumn]]->getValue($sourceEntity);
             unset($identifier[$targetKeyColumn]);
         }
 
@@ -1309,12 +1309,11 @@ class BasicEntityPersister
                 $tableAlias           = $this->getSQLTableAlias($targetEntity, $assocAlias);
                 $this->selectJoinSql .= ' ' . $this->getJoinSQLForJoinColumns($association['joinColumns']);
 
-
                 foreach ($association['joinColumns'] as $joinColumn) {
                     $sourceCol       = $this->quoteStrategy->getJoinColumnName($joinColumn, $this->class, $this->platform);
                     $targetCol       = $this->quoteStrategy->getReferencedJoinColumnName($joinColumn, $this->class, $this->platform);
                     $joinCondition[] = $this->getSQLTableAlias($association['sourceEntity'])
-                                        . '.' . $sourceCol . ' = ' . $tableAlias . '.' . $targetCol;
+                                      . '.' . $sourceCol . ' = ' . $tableAlias . '.' . $targetCol;
                 }
 
                 // Add filter SQL
@@ -1325,6 +1324,7 @@ class BasicEntityPersister
             } else {
 
                 $this->selectJoinSql .= ' LEFT JOIN';
+
 
                 foreach ($association['joinColumns'] as $joinColumn) {
 
@@ -1352,7 +1352,6 @@ class BasicEntityPersister
             }
 
             $this->selectJoinSql .= ' (' . $joinTableName . ' ' . $joinTableAlias;
-
             $this->selectJoinSql .= $this->generateJoinFilterConditionSql($eagerEntity, $joinTableAlias, $eagerEntity, $joinTableAlias);
 
             $this->selectJoinSql .= ') ON ';
