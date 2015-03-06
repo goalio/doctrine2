@@ -114,6 +114,20 @@ final class PersistentCollection implements Collection, Selectable
     private $coll;
 
     /**
+     * Track added values
+     *
+     * @var Collection
+     */
+    private $added;
+
+    /**
+     * Track removed values
+     *
+     * @var Collection
+     */
+    private $removed;
+
+    /**
      * Creates a new persistent collection.
      *
      * @param EntityManager $em    The EntityManager the collection will be associated with.
@@ -125,6 +139,9 @@ final class PersistentCollection implements Collection, Selectable
         $this->coll      = $coll;
         $this->em        = $em;
         $this->typeClass = $class;
+
+        $this->added     = new ArrayCollection();
+        $this->removed   = new ArrayCollection();
     }
 
     /**
@@ -230,6 +247,7 @@ final class PersistentCollection implements Collection, Selectable
 
         if ($this->isDirty) {
             $newObjects = $this->coll->toArray();
+            $remObjects = $this->removed->toArray();
         }
 
         $this->coll->clear();
@@ -244,6 +262,16 @@ final class PersistentCollection implements Collection, Selectable
 
             $this->isDirty = true;
         }
+
+        // Delete objects removed through remove(), if any
+        if($remObjects) {
+            foreach ($remObjects as $obj) {
+                $this->coll->removeElement($obj);
+            }
+
+            $this->isDirty = true;
+        }
+
 
         $this->initialized = true;
     }
@@ -446,9 +474,18 @@ final class PersistentCollection implements Collection, Selectable
             return null;
         }
 
-        $this->initialize();
+        if($this->initialized) {
+            $removed = $this->coll->removeElement($element);
+        }
+        else {
+            $removed = $this->removed->add($element);
+        }
 
-        $removed = $this->coll->removeElement($element);
+//        //Doctrine default
+//        $this->initialize();
+//
+//        $removed = $this->coll->removeElement($element);
+
 
         if ( ! $removed) {
             return $removed;
