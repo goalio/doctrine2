@@ -244,6 +244,7 @@ final class PersistentCollection implements Collection, Selectable
 
         // Has NEW objects added through add(). Remember them.
         $newObjects = array();
+        $remObjects = array();
 
         if ($this->isDirty) {
             $newObjects = $this->coll->toArray();
