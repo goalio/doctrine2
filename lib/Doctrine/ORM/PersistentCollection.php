@@ -258,7 +258,9 @@ final class PersistentCollection implements Collection, Selectable
         // Reattach NEW objects added through add(), if any.
         if ($newObjects) {
             foreach ($newObjects as $obj) {
-                $this->coll->add($obj);
+                if(!$this->coll->contains($obj)) {
+                    $this->coll->add($obj);
+                }
             }
 
             $this->isDirty = true;
