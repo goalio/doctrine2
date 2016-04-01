@@ -334,6 +334,32 @@ abstract class AbstractHydrator
             }
         }
 
+        // --- custom start ---
+        // Support for invalidation of partial data sets because of inherited tables
+        // In some cases (eg. softdelete filter) the parent class could not be joined and therefore
+        // some empty fields like id or discriminator are not set, but the object is marked as unempty
+        foreach($rowData as $dqlAlias => $result) {
+            if(!isset($nonemptyComponents[$dqlAlias]) || !isset($this->_rsm->aliasMap[$dqlAlias])) {
+                continue;
+            }
+
+            $classMetadata = $this->_em->getClassMetadata($this->_rsm->aliasMap[$dqlAlias]);
+            foreach($classMetadata->identifier as $identifier) {
+                if(!isset($result[$identifier])) {
+                    unset($nonemptyComponents[$dqlAlias]);
+                    continue 2;
+                }
+            }
+
+            if($classMetadata->discriminatorColumn && !isset($result[$classMetadata->discriminatorColumn['fieldName']])) {
+                unset($nonemptyComponents[$dqlAlias]);
+                continue;
+            }
+        }
+        // --- custom end ---
+
+
+
         return $rowData;
     }
 
